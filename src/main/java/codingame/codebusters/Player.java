@@ -14,7 +14,7 @@ class Player {
         int myTeamId = in.nextInt(); // if this is 0, your base is on the top left of the map,
                                      // if it is one, on the bottom right
 
-        BusterManager busterManager = new BusterManager(myTeamId, bustersPerPlayer, ghostCount);
+        BusterManager busterManager = new BusterManager(myTeamId, bustersPerPlayer);
 
         // game loop
         while (true) {
@@ -53,35 +53,36 @@ class Player {
     }
 
     static class BusterManager {
+        private static final int MAX_X = 16000;
+        private static final int MAX_Y = 9000;
+
         private int baseX, baseY;
         private int teamId;
-        private int ghostCount;
+        private int firstBusterId;
         private Map<Integer, Buster> busters;
         private Map<Integer, Coordinate> busterCoordinates;
 
         private Random random = new Random();
 
-        public BusterManager(int teamId, int bustersPerPlayer, int ghostCount) {
-            this.teamId = teamId;
-            this.ghostCount = ghostCount;
+        public BusterManager(int teamId, int bustersPerPlayer) {
             this.busters = new HashMap<>(bustersPerPlayer);
             this.busterCoordinates = new HashMap<>(bustersPerPlayer);
+            this.teamId = teamId;
             switch (teamId) {
                 case 0:
                     this.baseX = 0;
                     this.baseY = 0;
+                    this.firstBusterId = 0;
                     break;
                 case 1:
                     this.baseX = 16000;
                     this.baseY = 9000;
+                    this.firstBusterId = bustersPerPlayer;
                     break;
             }
-            for (int i = 0; i < bustersPerPlayer; i++) {
-                if ((i + 1) % 2 == 0) {
-                    busterCoordinates.put(i, new RandomXCoordinate(random, 16000, 9000));
-                } else {
-                    busterCoordinates.put(i, new RandomYCoordinate(random, 16000, 9000));
-                }
+            for (int i = firstBusterId; i < firstBusterId + bustersPerPlayer; i++) {
+                System.err.println("Id: " + i);
+                busterCoordinates.put(i, getCoordinate(i, teamId));
             }
         }
 
@@ -98,6 +99,7 @@ class Player {
         }
 
         public String getNextBusterMove(int index) {
+            index = index + this.firstBusterId;
             Buster buster = this.busters.get(index);
             if (buster.getState() == 1) {
                 // has ghost -> return to base
@@ -114,30 +116,39 @@ class Player {
                     if (distance <= 1760 && distance > 900) {
                         return "BUST " + buster.getClosestGhost().getId();
                     } else {
-                        return getNextMove(buster.getTargetX(), buster.getTargetY());
+                        return getNextMove(buster.getClosestGhost().getX(), buster.getClosestGhost().getY());
                     }
                 } else {
                     double distanceToTarget = distanceBetweenPoints(buster.getX(), buster.getY(),
                             buster.getTargetX(), buster.getTargetY());
-                    System.err.println("Distance to target: " + buster.getId() + ", " + distanceToTarget);
                     // If reached the target -> go back to base
                     if (distanceToTarget <= 2000) {
                         Coordinate coordinate = this.busterCoordinates.get(index);
                         if (coordinate.getX() != this.baseX && coordinate.getY() != this.baseY) {
-                            this.busterCoordinates.put(index, new BaseCoordinate());
+                            this.busterCoordinates.put(index, new BaseCoordinate(this.baseX, this.baseY));
                             buster.setTargetX(this.baseX);
                             buster.setTargetY(this.baseY);
                         } else {
-                            if ((index + 1) % 2 == 0) {
-                                this.busterCoordinates.put(index, new RandomXCoordinate(random,
-                                        16000, 9000));
-                            } else {
-                                this.busterCoordinates.put(index, new RandomYCoordinate(random,
-                                        16000, 9000));
-                            }
+                            busterCoordinates.put(index, getCoordinate(index, teamId));
                         }
                     }
                     return getNextMove(buster.getTargetX(), buster.getTargetY());
+                }
+            }
+        }
+
+        private Coordinate getCoordinate(int index, int teamId) {
+            if ((index + 1) % 2 == 0) {
+                if (teamId == 0) {
+                    return new Coordinate(random.nextInt(MAX_X) + 1, MAX_Y);
+                } else {
+                    return new Coordinate(random.nextInt(MAX_X) + 1, 0);
+                }
+            } else {
+                if (teamId == 0) {
+                    return new Coordinate(MAX_X, random.nextInt(MAX_Y) + 1);
+                } else {
+                    return new Coordinate(0, random.nextInt(MAX_Y) + 1);
                 }
             }
         }
@@ -257,22 +268,8 @@ class Player {
 
     static class BaseCoordinate extends Coordinate {
 
-        public BaseCoordinate() {
-            super(0, 0);
-        }
-    }
-
-    static class RandomXCoordinate extends Coordinate {
-
-        public RandomXCoordinate(Random random, int baseX, int baseY) {
-            super(random.nextInt(baseX) + 1, baseY);
-        }
-    }
-
-    static class RandomYCoordinate extends Coordinate {
-
-        public RandomYCoordinate(Random random, int baseX, int baseY) {
-            super(baseX, random.nextInt(baseY) + 1);
+        public BaseCoordinate(int baseX, int baseY) {
+            super(baseX, baseY);
         }
     }
 
