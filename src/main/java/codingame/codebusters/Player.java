@@ -45,7 +45,7 @@ class Player {
                 // To debug: System.err.println("Debug messages...");
 
                 //System.out.println("MOVE 8000 4500"); // MOVE x y | BUST id | RELEASE
-                String move = busterManager.getNextBusterMove(i);
+                String move = busterManager.getNextBusterAction(i);
                 System.err.println("Id: " + i + ", " + move);
                 System.out.println(move);
             }
@@ -82,7 +82,7 @@ class Player {
             }
             for (int i = firstBusterId; i < firstBusterId + bustersPerPlayer; i++) {
                 System.err.println("Id: " + i);
-                busterCoordinates.put(i, getCoordinate(i, teamId));
+                busterCoordinates.put(i, getRandomCoordinate(i, teamId));
             }
         }
 
@@ -98,7 +98,7 @@ class Player {
             this.busters.get(busterId).setClosestGhost(ghost);
         }
 
-        public String getNextBusterMove(int index) {
+        public String getNextBusterAction(int index) {
             index = index + this.firstBusterId;
             Buster buster = this.busters.get(index);
             if (buster.getState() == 1) {
@@ -125,11 +125,11 @@ class Player {
                     if (distanceToTarget <= 2000) {
                         Coordinate coordinate = this.busterCoordinates.get(index);
                         if (coordinate.getX() != this.baseX && coordinate.getY() != this.baseY) {
-                            this.busterCoordinates.put(index, new BaseCoordinate(this.baseX, this.baseY));
+                            this.busterCoordinates.put(index, new Coordinate(this.baseX, this.baseY));
                             buster.setTargetX(this.baseX);
                             buster.setTargetY(this.baseY);
                         } else {
-                            busterCoordinates.put(index, getCoordinate(index, teamId));
+                            busterCoordinates.put(index, getRandomCoordinate(index, teamId));
                         }
                     }
                     return getNextMove(buster.getTargetX(), buster.getTargetY());
@@ -137,7 +137,7 @@ class Player {
             }
         }
 
-        private Coordinate getCoordinate(int index, int teamId) {
+        private Coordinate getRandomCoordinate(int index, int teamId) {
             if ((index + 1) % 2 == 0) {
                 if (teamId == 0) {
                     return new Coordinate(random.nextInt(MAX_X) + 1, MAX_Y);
@@ -253,23 +253,8 @@ class Player {
             return x;
         }
 
-        public void setX(int x) {
-            this.x = x;
-        }
-
         public int getY() {
             return y;
-        }
-
-        public void setY(int y) {
-            this.y = y;
-        }
-    }
-
-    static class BaseCoordinate extends Coordinate {
-
-        public BaseCoordinate(int baseX, int baseY) {
-            super(baseX, baseY);
         }
     }
 
